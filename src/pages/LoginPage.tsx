@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import api from '../api';
 
 interface Props {
   onLogin: (token: string, name?: string, isAdmin?: boolean) => void;
@@ -22,23 +23,31 @@ export default function LoginPage({ onLogin }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const fakeLogin = () => {
-    // Check for hardcoded admin credentials
-    if (email === 'admin@qom.com' && password === 'millieadmin') {
-      onLogin('admin-token-hardcoded', 'Admin', true);
-      return;
-    }
-    
-    // Regular user login
-    const name = email.split('@')[0] || 'Friend';
-    const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-    onLogin('demo-token', capitalizedName, false);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    fakeLogin();
+    setError('');
+    setLoading(true);
+    try {
+      if (mode === 'login') {
+        const res = await api.post('/api/login', { email, password });
+        const token = res.data.token;
+        const namePart = email.split('@')[0] || 'Friend';
+        const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1).toLowerCase();
+        const adminFlag = email.toLowerCase() === 'admin@qom.com';
+        onLogin(token, adminFlag ? 'Admin' : capitalizedName, adminFlag);
+      } else {
+        await api.post('/api/register', { email, password });
+        setMode('login');
+        setError('Registered successfully! You can now log in.');
+      }
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Something went wrong';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -172,6 +181,7 @@ export default function LoginPage({ onLogin }: Props) {
                 type="submit" 
                 variant="contained" 
                 size="large"
+                disabled={loading}
                 endIcon={<RocketLaunchIcon />}
                 sx={{
                   mt: 2,
