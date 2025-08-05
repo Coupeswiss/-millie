@@ -56,6 +56,7 @@ interface DashboardData {
     targetPrice: string;
     analysis: string;
   };
+  lastUpdated?: string;
 }
 
 const readDashboard = (): DashboardData | null => {
@@ -69,7 +70,8 @@ const readDashboard = (): DashboardData | null => {
 
 const writeDashboard = (data: DashboardData) => {
   fs.mkdirSync(path.dirname(DASHBOARD_FILE), { recursive: true });
-  fs.writeFileSync(DASHBOARD_FILE, JSON.stringify(data, null, 2));
+  const dataWithTimestamp = { ...data, lastUpdated: new Date().toISOString() };
+  fs.writeFileSync(DASHBOARD_FILE, JSON.stringify(dataWithTimestamp, null, 2));
 };
 
 const chunkText = (text: string, size: number): string[] => {

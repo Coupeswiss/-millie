@@ -60,7 +60,7 @@ export default function AdminPage({ onLogout }: Props) {
     setLoading(true);
     try {
       await api.post('/api/transcripts', { text: transcriptText });
-      setSnackbar({ open: true, message: 'Transcript uploaded successfully! Dashboard will update shortly.', severity: 'success' });
+      setSnackbar({ open: true, message: 'Transcript uploaded successfully! User dashboards will refresh within 60 seconds.', severity: 'success' });
       setTranscriptText('');
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to upload transcript', severity: 'error' });

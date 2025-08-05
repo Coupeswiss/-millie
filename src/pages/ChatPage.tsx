@@ -131,6 +131,8 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
   const [newsItems, setNewsItems] = useState<CommunityNewsItem[]>(defaultCommunityNews);
   const [coin, setCoin] = useState<CoinOfWeek>(defaultCoinOfWeek);
   const [uploadText, setUploadText] = useState('');
+  const [hasNewUpdate, setHasNewUpdate] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch real crypto prices
@@ -185,7 +187,16 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
   const fetchSummary = async () => {
     try {
       const res = await api.get('/api/summary');
-      const { weeklyMeeting, dailyQuotes, communityNews, coinOfWeek } = res.data;
+      const { weeklyMeeting, dailyQuotes, communityNews, coinOfWeek, lastUpdated } = res.data;
+      
+      // Check if content is new
+      if (lastUpdated && lastUpdated !== lastUpdateTime) {
+        setHasNewUpdate(true);
+        setLastUpdateTime(lastUpdated);
+        // Auto-hide the indicator after 10 seconds
+        setTimeout(() => setHasNewUpdate(false), 10000);
+      }
+      
       if (weeklyMeeting) setWeeklyMeetingData(weeklyMeeting);
       if (Array.isArray(dailyQuotes) && dailyQuotes.length) {
         setQuotes(dailyQuotes);
@@ -200,7 +211,7 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
 
   useEffect(() => {
     fetchSummary();
-    const intervalId = setInterval(fetchSummary, 5 * 60 * 1000); // refresh every 5 minutes
+    const intervalId = setInterval(fetchSummary, 60 * 1000); // refresh every minute
     return () => clearInterval(intervalId);
   }, []);
 
@@ -341,6 +352,31 @@ What's on your mind today? 💜`,
         <Grid container spacing={3}>
           {/* Left Column - Market & Community */}
           <Grid item xs={12} md={3}>
+            {/* New Update Indicator */}
+            <Fade in={hasNewUpdate}>
+              <Paper sx={{ 
+                p: 2, 
+                mb: 2,
+                background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(75, 0, 130, 0.15) 100%)',
+                border: '2px solid rgba(138, 43, 226, 0.5)',
+                textAlign: 'center',
+              }}>
+                <Typography variant="body2" sx={{ 
+                  fontWeight: 700,
+                  color: '#8A2BE2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                }}>
+                  <AutoAwesomeIcon sx={{ fontSize: 18 }} />
+                  New Content Available!
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Dashboard updated with fresh insights
+                </Typography>
+              </Paper>
+            </Fade>
             {/* Live Market */}
             <Paper sx={{ 
               p: 3, 
