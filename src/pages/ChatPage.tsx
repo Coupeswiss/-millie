@@ -223,7 +223,13 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
       {
         role: 'assistant',
         content:
-          `👋 Hi ${name}! I'm Millie, your personal crypto mentor. Welcome to the Queen of Millions Crypto Lab. I'm here to help you navigate the exciting world of cryptocurrency. What would you like to learn about today?`,
+          `✨ Welcome ${name}! I'm Millie, your guide inside Queen of Millions. 
+
+I'm here to support you on your journey to financial sovereignty through crypto—no hype, no overwhelm, just clear guidance tailored to where you are right now.
+
+Whether you're curious about PulseChain, want to understand DeFi, or need help building your portfolio with confidence, I'm here for you. 
+
+What's on your mind today? 💜`,
       },
     ]);
   }, [userName]);
@@ -322,7 +328,7 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
               fontWeight: 300,
               mb: 1,
             }}>
-              Crypto Education Lab
+              Where Wealth Meets Soul
             </Typography>
             <Typography variant="h6" color="text.secondary" sx={{ fontStyle: 'italic' }}>
               "You're Not Late. You're Right on Time—And You're Not Alone."
@@ -378,39 +384,93 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
               ))}
             </Paper>
 
-            {/* Coin of the Week */}
+            {/* PulseChain Spotlight */}
             <Paper sx={{ 
               p: 3, 
               mb: 3,
-              background: 'linear-gradient(135deg, rgba(247, 178, 103, 0.2) 0%, rgba(247, 178, 103, 0.1) 100%)',
-              border: '2px solid rgba(247, 178, 103, 0.4)',
+              background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.15) 0%, rgba(75, 0, 130, 0.1) 100%)',
+              border: '2px solid rgba(138, 43, 226, 0.4)',
+              position: 'relative',
+              overflow: 'hidden',
             }}>
+              <Box sx={{
+                position: 'absolute',
+                top: -20,
+                right: -20,
+                width: 80,
+                height: 80,
+                background: 'radial-gradient(circle, rgba(138, 43, 226, 0.3) 0%, transparent 70%)',
+                borderRadius: '50%',
+              }} />
               <Typography variant="h6" gutterBottom sx={{ 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: 1,
-                color: 'secondary.main',
+                background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
                 fontWeight: 700,
               }}>
-                <RocketLaunchIcon /> Coin of the Week
+                <RocketLaunchIcon sx={{ color: '#8A2BE2' }} /> PulseChain Spotlight
               </Typography>
               <Box sx={{ mt: 2 }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main' }}>
-                  {coin.symbol}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {coin.name}
-                </Typography>
-                <Divider sx={{ my: 1 }} />
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Current:</strong> {coin.currentPrice}
-                </Typography>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  <strong>Target:</strong> {coin.targetPrice}
-                </Typography>
-                <Typography variant="body2" sx={{ fontStyle: 'italic', mt: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 0.5 }}>
+                  <Typography variant="h4" sx={{ fontWeight: 800, color: '#8A2BE2' }}>
+                    {coin.symbol}
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                    {coin.name}
+                  </Typography>
+                </Box>
+                
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 3, 
+                  mt: 2,
+                  p: 2,
+                  borderRadius: 2,
+                  background: 'rgba(138, 43, 226, 0.05)',
+                }}>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                      Current Price
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                      {coin.currentPrice}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+                      Target Price
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: 'secondary.main' }}>
+                      {coin.targetPrice}
+                    </Typography>
+                  </Box>
+                </Box>
+                
+                <Typography variant="body2" sx={{ 
+                  mt: 2,
+                  p: 2,
+                  borderLeft: '3px solid rgba(138, 43, 226, 0.5)',
+                  background: 'rgba(138, 43, 226, 0.03)',
+                  fontStyle: 'italic',
+                  lineHeight: 1.7,
+                }}>
                   {coin.reason}
                 </Typography>
+                
+                {coin.analysis && (
+                  <Typography variant="caption" sx={{ 
+                    display: 'block',
+                    mt: 2,
+                    color: 'text.secondary',
+                    lineHeight: 1.6,
+                  }}>
+                    💡 {coin.analysis}
+                  </Typography>
+                )}
               </Box>
             </Paper>
 

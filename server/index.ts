@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { loadVectors, search as searchVectors, addVector, saveVectors } from './vectorStore';
+import { webSearch } from './webSearch';
 
 dotenv.config();
 
@@ -162,6 +163,24 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
     context = hits.join('\n---\n');
   } catch (err) {
     console.warn('[RAG] search failed', err);
+  }
+
+  // Add web search for real-time info
+  const needsSearch = userQuestion.toLowerCase().includes('price') || 
+                     userQuestion.toLowerCase().includes('latest') ||
+                     userQuestion.toLowerCase().includes('today') ||
+                     userQuestion.toLowerCase().includes('current') ||
+                     userQuestion.toLowerCase().includes('now');
+  
+  if (needsSearch) {
+    try {
+      const searchResults = await webSearch(userQuestion);
+      if (searchResults) {
+        context += '\n---\nWeb search results:\n' + searchResults;
+      }
+    } catch (err) {
+      console.warn('[Web search] failed', err);
+    }
   }
 
   try {
