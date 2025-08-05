@@ -232,15 +232,7 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
       messages: [
         {
           role: 'system',
-          content: `You are Millie, the friendly mentor inside Queen of Millions.
-Tone: warm, conversational, encouraging—but also clear and data-driven.
-Audience: women who are becoming financially sovereign through crypto.
-Guidelines:
-• Speak in “you” language (“you can”, “your portfolio”), never hype.
-• Simplify jargon in plain English; offer analogies when helpful.
-• Celebrate small wins and reassure around market volatility.
-• Keep answers concise (≈3 short paragraphs) unless the user requests deep detail.
-• If you don’t know something, say so and suggest where to find the answer.`,
+          content: readSystemPrompt(),
         },
         {
           role: 'system',
@@ -441,6 +433,92 @@ app.post('/api/admin/whitelist/upload', (req, res) => {
   });
   writeWhitelist(whitelist);
   res.json({ message: `Added ${emails.length} emails to whitelist` });
+});
+
+// ---------- Collective Consciousness ----------
+app.post('/api/admin/collective', async (req, res) => {
+  const { text, type, date } = req.body;
+  if (!text) {
+    return res.status(400).json({ message: 'Text required' });
+  }
+  
+  try {
+    // Add to knowledge base with special prefix
+    const prefix = `[Collective Consciousness - ${type || 'general'}] ${date ? new Date(date).toLocaleDateString() : new Date().toLocaleDateString()}:\n`;
+    const fullText = prefix + text;
+    
+    // Chunk and embed
+    const chunks = chunkText(fullText, CHUNK_SIZE);
+    for (const chunk of chunks) {
+      try {
+        const emb = await openai.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: chunk,
+        });
+        addVector({ text: chunk, embedding: emb.data[0].embedding });
+      } catch (err) {
+        console.warn('[Collective] embedding failed', err);
+      }
+    }
+    saveVectors();
+    
+    res.json({ message: 'Added to collective consciousness' });
+  } catch (err) {
+    console.error('[Collective] error', err);
+    res.status(500).json({ message: 'Failed to process' });
+  }
+});
+
+// ---------- System Prompt Management ----------
+const SYSTEM_PROMPT_FILE = path.join(__dirname, 'system-prompt.json');
+
+const readSystemPrompt = (): string => {
+  try {
+    const raw = fs.readFileSync(SYSTEM_PROMPT_FILE, 'utf8');
+    const data = JSON.parse(raw);
+    return data.prompt || '';
+  } catch {
+    // Default prompt if file doesn't exist
+    return `You are Millie, the friendly mentor inside Queen of Millions.
+Tone: warm, conversational, encouraging—but also clear and data-driven.
+Audience: women who are becoming financially sovereign through crypto.
+Guidelines:
+• Speak in "you" language ("you can", "your portfolio"), never hype.
+• Simplify jargon in plain English; offer analogies when useful.
+• Celebrate small wins and reassure around market volatility.
+• Keep answers concise (≈3 short paragraphs) unless the user requests deep detail.
+• If you don't know something, say so and suggest where to find the answer.`;
+  }
+};
+
+const writeSystemPrompt = (prompt: string) => {
+  fs.writeFileSync(SYSTEM_PROMPT_FILE, JSON.stringify({ prompt, updatedAt: new Date().toISOString() }, null, 2));
+};
+
+app.get('/api/admin/system-prompt', (_req, res) => {
+  res.json({ prompt: readSystemPrompt() });
+});
+
+app.post('/api/admin/system-prompt', (req, res) => {
+  const { prompt } = req.body;
+  if (!prompt) {
+    return res.status(400).json({ message: 'Prompt required' });
+  }
+  writeSystemPrompt(prompt);
+  res.json({ message: 'System prompt updated' });
+});
+
+// ---------- Daily Quotes Management ----------
+app.post('/api/admin/daily-quotes', (req, res) => {
+  const { quotes } = req.body;
+  if (!Array.isArray(quotes)) {
+    return res.status(400).json({ message: 'Quotes array required' });
+  }
+  
+  const dashboard = readDashboard();
+  dashboard.dailyQuotes = quotes;
+  writeDashboard(dashboard);
+  res.json({ message: 'Daily quotes updated' });
 });
 
 // -------- Serve React static build ---------

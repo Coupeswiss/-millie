@@ -14,15 +14,22 @@ import {
   Stack,
   LinearProgress,
   IconButton,
+  Divider,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
 } from '@mui/material';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import LogoutIcon from '@mui/icons-material/Logout';
-import DescriptionIcon from '@mui/icons-material/Description';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import SettingsIcon from '@mui/icons-material/Settings';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import GroupsIcon from '@mui/icons-material/Groups';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import FileUploadIcon from '@mui/icons-material/FileUpload';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import api from '../api';
 
 interface TabPanelProps {
@@ -37,8 +44,6 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`admin-tabpanel-${index}`}
-      aria-labelledby={`admin-tab-${index}`}
       {...other}
     >
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
@@ -52,21 +57,65 @@ interface Props {
 
 export default function AdminPage({ onLogout }: Props) {
   const [tabValue, setTabValue] = useState(0);
-  const [transcriptText, setTranscriptText] = useState('');
-  const [contextText, setContextText] = useState('');
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  
+  // Collective Consciousness
+  const [collectiveText, setCollectiveText] = useState('');
+  
+  // Transcripts
+  const [transcriptText, setTranscriptText] = useState('');
+  
+  // System Prompt
+  const [systemPrompt, setSystemPrompt] = useState('');
+  
+  // Daily Wisdom
+  const [dailyQuotes, setDailyQuotes] = useState<string[]>([]);
+  const [newQuote, setNewQuote] = useState('');
+  
+  // Whitelist
+  const [whitelist, setWhitelist] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [csvEmails, setCsvEmails] = useState('');
-  const [whitelist, setWhitelist] = useState<string[]>([]);
 
+  useEffect(() => {
+    if (tabValue === 2) {
+      fetchSystemPrompt();
+    } else if (tabValue === 3) {
+      fetchDailyQuotes();
+    } else if (tabValue === 4) {
+      fetchWhitelist();
+    }
+  }, [tabValue]);
+
+  // Collective Consciousness Handler
+  const handleCollectiveUpload = async () => {
+    if (!collectiveText.trim()) return;
+    
+    setLoading(true);
+    try {
+      await api.post('/api/admin/collective', { 
+        text: collectiveText,
+        type: 'consciousness',
+        date: new Date().toISOString()
+      });
+      setSnackbar({ open: true, message: 'Added to Millie\'s collective consciousness!', severity: 'success' });
+      setCollectiveText('');
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to upload', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Transcript Handler
   const handleTranscriptUpload = async () => {
     if (!transcriptText.trim()) return;
     
     setLoading(true);
     try {
       await api.post('/api/transcripts', { text: transcriptText });
-      setSnackbar({ open: true, message: 'Transcript uploaded successfully! User dashboards will refresh within 60 seconds.', severity: 'success' });
+      setSnackbar({ open: true, message: 'Transcript uploaded successfully!', severity: 'success' });
       setTranscriptText('');
     } catch (err) {
       setSnackbar({ open: true, message: 'Failed to upload transcript', severity: 'error' });
@@ -75,22 +124,71 @@ export default function AdminPage({ onLogout }: Props) {
     }
   };
 
-  const handleContextUpload = async () => {
-    if (!contextText.trim()) return;
+  // System Prompt Handlers
+  const fetchSystemPrompt = async () => {
+    try {
+      const res = await api.get('/api/admin/system-prompt');
+      setSystemPrompt(res.data.prompt || '');
+    } catch (err) {
+      console.error('Failed to fetch system prompt', err);
+    }
+  };
+
+  const handleSystemPromptUpdate = async () => {
+    if (!systemPrompt.trim()) return;
     
     setLoading(true);
     try {
-      // For now, this adds to the same knowledge base
-      await api.post('/api/transcripts', { text: contextText, date: new Date().toISOString() });
-      setSnackbar({ open: true, message: 'Context added to Millie\'s knowledge base!', severity: 'success' });
-      setContextText('');
+      await api.post('/api/admin/system-prompt', { prompt: systemPrompt });
+      setSnackbar({ open: true, message: 'System prompt updated!', severity: 'success' });
     } catch (err) {
-      setSnackbar({ open: true, message: 'Failed to add context', severity: 'error' });
+      setSnackbar({ open: true, message: 'Failed to update system prompt', severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
+  // Daily Quotes Handlers
+  const fetchDailyQuotes = async () => {
+    try {
+      const res = await api.get('/api/summary');
+      setDailyQuotes(res.data.dailyQuotes || []);
+    } catch (err) {
+      console.error('Failed to fetch daily quotes', err);
+    }
+  };
+
+  const handleAddQuote = async () => {
+    if (!newQuote.trim()) return;
+    
+    setLoading(true);
+    try {
+      const updatedQuotes = [...dailyQuotes, newQuote];
+      await api.post('/api/admin/daily-quotes', { quotes: updatedQuotes });
+      setSnackbar({ open: true, message: 'Quote added!', severity: 'success' });
+      setNewQuote('');
+      fetchDailyQuotes();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to add quote', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteQuote = async (index: number) => {
+    setLoading(true);
+    try {
+      const updatedQuotes = dailyQuotes.filter((_, i) => i !== index);
+      await api.post('/api/admin/daily-quotes', { quotes: updatedQuotes });
+      fetchDailyQuotes();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to delete quote', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Whitelist Handlers
   const fetchWhitelist = async () => {
     try {
       const res = await api.get('/api/admin/whitelist');
@@ -121,7 +219,6 @@ export default function AdminPage({ onLogout }: Props) {
     
     setLoading(true);
     try {
-      // Parse CSV (handles comma, newline, or semicolon separated)
       const emails = csvEmails
         .split(/[,\n;]/)
         .map(email => email.trim())
@@ -138,220 +235,220 @@ export default function AdminPage({ onLogout }: Props) {
     }
   };
 
-  useEffect(() => {
-    if (tabValue === 2) {
-      fetchWhitelist();
-    }
-  }, [tabValue]);
-
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a0033 0%, #330066 100%)',
-    }}>
-      {/* Admin Header */}
-      <Paper sx={{ 
-        borderRadius: 0,
-        background: 'rgba(138, 43, 226, 0.1)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '2px solid rgba(138, 43, 226, 0.3)',
-      }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+      {/* Header */}
+      <Paper sx={{ borderRadius: 0, mb: 3 }}>
         <Container maxWidth="lg">
           <Box sx={{ 
             display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
+            justifyContent: 'space-between', 
+            alignItems: 'center',
             py: 2,
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <AdminPanelSettingsIcon sx={{ fontSize: 32, color: '#8A2BE2' }} />
-              <Typography variant="h5" sx={{ 
-                fontWeight: 700,
-                background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}>
-                Queen of Millions Admin Portal
-              </Typography>
-            </Box>
-            <IconButton onClick={onLogout} sx={{ color: 'text.secondary' }}>
-              <LogoutIcon />
-            </IconButton>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              Millie Admin Portal
+            </Typography>
+            <Button
+              variant="outlined"
+              startIcon={<LogoutIcon />}
+              onClick={onLogout}
+              sx={{ borderColor: '#333', color: '#333' }}
+            >
+              Logout
+            </Button>
           </Box>
         </Container>
       </Paper>
 
-      <Container maxWidth="lg" sx={{ mt: 4 }}>
-        <Paper sx={{ 
-          background: 'rgba(30, 0, 60, 0.8)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(138, 43, 226, 0.3)',
-        }}>
+      <Container maxWidth="lg">
+        <Paper sx={{ bgcolor: '#fff', borderRadius: 2 }}>
           <Tabs
             value={tabValue}
-            onChange={(_, newValue) => setTabValue(newValue)}
+            onChange={(_, v) => setTabValue(v)}
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               borderBottom: 1,
               borderColor: 'divider',
               '& .MuiTab-root': {
-                color: 'text.secondary',
-                '&.Mui-selected': {
-                  color: '#8A2BE2',
-                },
-              },
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#8A2BE2',
+                textTransform: 'none',
+                fontWeight: 500,
               },
             }}
           >
-            <Tab label="Upload Transcript" icon={<UploadFileIcon />} iconPosition="start" />
-            <Tab label="Add Context" icon={<DescriptionIcon />} iconPosition="start" />
+            <Tab label="Collective Consciousness" icon={<PsychologyIcon />} iconPosition="start" />
+            <Tab label="Meeting Transcripts" icon={<UploadFileIcon />} iconPosition="start" />
+            <Tab label="System Prompt" icon={<SettingsIcon />} iconPosition="start" />
+            <Tab label="Daily Wisdom" icon={<FormatQuoteIcon />} iconPosition="start" />
             <Tab label="Member Whitelist" icon={<GroupsIcon />} iconPosition="start" />
-            <Tab label="System Status" icon={<AutoAwesomeIcon />} iconPosition="start" />
           </Tabs>
 
+          {/* Collective Consciousness Tab */}
           <TabPanel value={tabValue} index={0}>
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
-                Upload Weekly Meeting Transcript
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                This will process the transcript, update the dashboard with new quotes, news, and coin spotlight,
-                and add the content to Millie's knowledge base.
-              </Typography>
-              
-              <TextField
-                fullWidth
-                multiline
-                rows={12}
-                variant="outlined"
-                placeholder="Paste the full transcript here..."
-                value={transcriptText}
-                onChange={(e) => setTranscriptText(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(138, 43, 226, 0.05)',
-                    '& fieldset': {
-                      borderColor: 'rgba(138, 43, 226, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(138, 43, 226, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8A2BE2',
-                    },
-                  },
-                }}
-              />
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleTranscriptUpload}
-                disabled={!transcriptText.trim() || loading}
-                sx={{
-                  mt: 3,
-                  py: 1.5,
-                  background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
-                  },
-                  '&:disabled': {
-                    background: 'rgba(138, 43, 226, 0.3)',
-                  },
-                }}
-              >
-                {loading ? 'Processing...' : 'Upload & Process Transcript'}
-              </Button>
-              
-              {loading && <LinearProgress sx={{ mt: 2 }} />}
-            </Box>
+            <Typography variant="h6" gutterBottom>
+              Collective Consciousness Upload
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Upload brain dumps, thoughts, insights, or any content to expand Millie's knowledge and shape her personality.
+            </Typography>
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={12}
+              variant="outlined"
+              placeholder="Paste or type content here... This can be anything: meeting notes, insights about crypto, community wisdom, strategic thoughts, etc."
+              value={collectiveText}
+              onChange={(e) => setCollectiveText(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              onClick={handleCollectiveUpload}
+              disabled={!collectiveText.trim() || loading}
+              startIcon={<PsychologyIcon />}
+            >
+              Add to Collective Consciousness
+            </Button>
           </TabPanel>
 
+          {/* Transcripts Tab */}
           <TabPanel value={tabValue} index={1}>
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
-                Add Context to Millie's Knowledge Base
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Add specific information, FAQs, or educational content that Millie can reference when answering questions.
-                This won't update the dashboard but will enhance Millie's responses.
-              </Typography>
-              
-              <TextField
-                fullWidth
-                multiline
-                rows={12}
-                variant="outlined"
-                placeholder="Enter educational content, FAQs, or specific information..."
-                value={contextText}
-                onChange={(e) => setContextText(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(138, 43, 226, 0.05)',
-                    '& fieldset': {
-                      borderColor: 'rgba(138, 43, 226, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(138, 43, 226, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#8A2BE2',
-                    },
-                  },
-                }}
-              />
-              
-              <Button
-                variant="contained"
-                size="large"
-                fullWidth
-                onClick={handleContextUpload}
-                disabled={!contextText.trim() || loading}
-                sx={{
-                  mt: 3,
-                  py: 1.5,
-                  background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
-                  '&:hover': {
-                    background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
-                  },
-                  '&:disabled': {
-                    background: 'rgba(138, 43, 226, 0.3)',
-                  },
-                }}
-              >
-                {loading ? 'Adding to Knowledge Base...' : 'Add Context'}
-              </Button>
-              
-              {loading && <LinearProgress sx={{ mt: 2 }} />}
-            </Box>
+            <Typography variant="h6" gutterBottom>
+              Upload Meeting Transcript
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Upload weekly meeting transcripts to update community news and coin spotlights.
+            </Typography>
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={10}
+              variant="outlined"
+              placeholder="Paste meeting transcript here..."
+              value={transcriptText}
+              onChange={(e) => setTranscriptText(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              onClick={handleTranscriptUpload}
+              disabled={!transcriptText.trim() || loading}
+            >
+              Process Transcript
+            </Button>
           </TabPanel>
 
+          {/* System Prompt Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
-                Member Whitelist Management
-              </Typography>
-              
-              {/* Add Individual Email */}
-              <Paper sx={{ 
-                p: 3, 
-                mb: 3,
-                background: 'rgba(138, 43, 226, 0.05)',
-                border: '1px solid rgba(138, 43, 226, 0.2)',
-              }}>
-                <Typography variant="subtitle1" gutterBottom sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  mb: 2,
-                }}>
-                  <PersonAddIcon sx={{ color: '#8A2BE2' }} />
+            <Typography variant="h6" gutterBottom>
+              System Prompt Configuration
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Define Millie's core personality, tone, and behavior. This prompt guides how she responds to users.
+            </Typography>
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={12}
+              variant="outlined"
+              placeholder="Enter system prompt..."
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              onClick={handleSystemPromptUpdate}
+              disabled={!systemPrompt.trim() || loading}
+              startIcon={<SettingsIcon />}
+            >
+              Update System Prompt
+            </Button>
+          </TabPanel>
+
+          {/* Daily Wisdom Tab */}
+          <TabPanel value={tabValue} index={3}>
+            <Typography variant="h6" gutterBottom>
+              Daily Wisdom Quotes
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Manage the inspirational quotes that appear in the user dashboard.
+            </Typography>
+            
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    placeholder="Enter a new inspirational quote..."
+                    value={newQuote}
+                    onChange={(e) => setNewQuote(e.target.value)}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleAddQuote}
+                    disabled={!newQuote.trim() || loading}
+                    startIcon={<AddIcon />}
+                  >
+                    Add
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  Current Quotes ({dailyQuotes.length})
+                </Typography>
+                <List>
+                  {dailyQuotes.map((quote, index) => (
+                    <ListItem key={index} divider>
+                      <ListItemText 
+                        primary={quote}
+                        primaryTypographyProps={{ variant: 'body2' }}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton 
+                          edge="end" 
+                          onClick={() => handleDeleteQuote(index)}
+                          disabled={loading}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </CardContent>
+            </Card>
+          </TabPanel>
+
+          {/* Whitelist Tab */}
+          <TabPanel value={tabValue} index={4}>
+            <Typography variant="h6" gutterBottom>
+              Member Whitelist Management
+            </Typography>
+            
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
                   Add Individual Email
                 </Typography>
-                
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
                     fullWidth
@@ -360,190 +457,69 @@ export default function AdminPage({ onLogout }: Props) {
                     placeholder="member@email.com"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        backgroundColor: 'rgba(138, 43, 226, 0.05)',
-                        '& fieldset': {
-                          borderColor: 'rgba(138, 43, 226, 0.3)',
-                        },
-                      },
-                    }}
                   />
                   <Button
                     variant="contained"
                     onClick={handleAddEmail}
                     disabled={!newEmail.trim() || loading}
-                    sx={{
-                      px: 3,
-                      background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
-                      '&:hover': {
-                        background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
-                      },
-                    }}
                   >
                     Add
                   </Button>
                 </Box>
-              </Paper>
-              
-              {/* Bulk Upload */}
-              <Paper sx={{ 
-                p: 3, 
-                mb: 3,
-                background: 'rgba(138, 43, 226, 0.05)',
-                border: '1px solid rgba(138, 43, 226, 0.2)',
-              }}>
-                <Typography variant="subtitle1" gutterBottom sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 1,
-                  mb: 2,
-                }}>
-                  <FileUploadIcon sx={{ color: '#8A2BE2' }} />
-                  Bulk Email Upload
+              </CardContent>
+            </Card>
+
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
+                  Bulk Upload
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                   Paste emails separated by commas, semicolons, or new lines
                 </Typography>
-                
                 <TextField
                   fullWidth
                   multiline
-                  rows={6}
+                  rows={4}
                   variant="outlined"
-                  placeholder="email1@example.com, email2@example.com&#10;email3@example.com"
+                  placeholder="email1@example.com, email2@example.com"
                   value={csvEmails}
                   onChange={(e) => setCsvEmails(e.target.value)}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'rgba(138, 43, 226, 0.05)',
-                      '& fieldset': {
-                        borderColor: 'rgba(138, 43, 226, 0.3)',
-                      },
-                    },
-                  }}
+                  sx={{ mb: 2 }}
                 />
-                
                 <Button
                   variant="contained"
                   fullWidth
                   onClick={handleCsvUpload}
                   disabled={!csvEmails.trim() || loading}
-                  sx={{
-                    mt: 2,
-                    py: 1.5,
-                    background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
-                    '&:hover': {
-                      background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
-                    },
-                  }}
                 >
                   Upload Emails
                 </Button>
-              </Paper>
-              
-              {/* Current Whitelist */}
-              <Paper sx={{ 
-                p: 3,
-                background: 'rgba(138, 43, 226, 0.05)',
-                border: '1px solid rgba(138, 43, 226, 0.2)',
-              }}>
-                <Typography variant="subtitle1" gutterBottom>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle2" gutterBottom>
                   Current Whitelist ({whitelist.length} members)
                 </Typography>
-                <Box sx={{ 
-                  mt: 2, 
-                  maxHeight: 300, 
-                  overflow: 'auto',
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  borderRadius: 1,
-                  p: 2,
-                }}>
-                  {whitelist.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      No emails in whitelist yet
-                    </Typography>
-                  ) : (
-                    <Stack spacing={1}>
-                      {whitelist.map((email, idx) => (
-                        <Chip
-                          key={idx}
-                          label={email}
-                          size="small"
-                          sx={{
-                            background: 'rgba(138, 43, 226, 0.2)',
-                            borderColor: 'rgba(138, 43, 226, 0.4)',
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                  )}
+                <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {whitelist.map((email, idx) => (
+                      <Chip key={idx} label={email} size="small" />
+                    ))}
+                  </Stack>
                 </Box>
-              </Paper>
-              
-              {loading && <LinearProgress sx={{ mt: 2 }} />}
-            </Box>
+              </CardContent>
+            </Card>
           </TabPanel>
 
-          <TabPanel value={tabValue} index={3}>
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
-                System Status
-              </Typography>
-              
-              <Stack spacing={3}>
-                <Alert severity="success" sx={{ 
-                  background: 'rgba(76, 175, 80, 0.1)',
-                  '& .MuiAlert-icon': { color: '#4CAF50' },
-                }}>
-                  Millie is online and responding to queries
-                </Alert>
-                
-                <Paper sx={{ 
-                  p: 3, 
-                  background: 'rgba(138, 43, 226, 0.05)',
-                  border: '1px solid rgba(138, 43, 226, 0.2)',
-                }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Knowledge Base Stats
-                  </Typography>
-                  <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-                    <Chip label="Vector Embeddings: Active" color="success" />
-                    <Chip label="Web Search: Enabled" color="success" />
-                    <Chip label="PulseChain Focus: Active" color="primary" />
-                  </Stack>
-                </Paper>
-                
-                <Paper sx={{ 
-                  p: 3, 
-                  background: 'rgba(138, 43, 226, 0.05)',
-                  border: '1px solid rgba(138, 43, 226, 0.2)',
-                }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Recent Activity
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    • Dashboard auto-refresh: Every 5 minutes<br />
-                    • Last transcript uploaded: Check server logs<br />
-                    • Active integrations: DuckDuckGo, CoinGecko
-                  </Typography>
-                </Paper>
-              </Stack>
-            </Box>
-          </TabPanel>
+          {loading && <LinearProgress />}
         </Paper>
       </Container>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
+      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
           {snackbar.message}
         </Alert>
       </Snackbar>
