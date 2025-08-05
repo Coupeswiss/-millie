@@ -24,6 +24,8 @@ interface TranscriptMeta {
   date: string; // ISO string
   topic: string;
   keyPoints: string[];
+  mentionedCoins?: string[];
+  actionItems?: string[];
   file: string; // relative path to transcript file
 }
 
@@ -260,11 +262,32 @@ app.post('/api/transcripts', async (req, res) => {
       console.warn('[Transcript] embedding failed', err);
     }
   }
+  
+  // Also add a structured summary to knowledge base
+  try {
+    const structuredSummary = `Weekly Meeting Transcript Summary:
+Date: ${transcriptDate}
+Key Topics Discussed:
+${text.slice(0, 2000)}
+
+This content is from a Queen of Millions community meeting and should be used to answer questions about recent updates, strategies, and community initiatives.`;
+    
+    const summaryEmb = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: structuredSummary,
+    });
+    addVector({ text: structuredSummary, embedding: summaryEmb.data[0].embedding });
+  } catch (err) {
+    console.warn('[Transcript summary] embedding failed', err);
+  }
+  
   saveVectors();
 
   // Generate summary
   let topic = 'Weekly Meeting';
   let keyPoints: string[] = [];
+  let mentionedCoins: string[] = [];
+  let actionItems: string[] = [];
   try {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -272,23 +295,35 @@ app.post('/api/transcripts', async (req, res) => {
         {
           role: 'system',
           content:
-            `You are Millie, the mentor voice of Queen of Millions. Summarize the following transcript for busy community members.
-Return ONLY valid JSON with keys "topic" (string) and "keyPoints" (array of 3-5 short bullet strings). Do not wrap in markdown.`
+            `You are Millie, the mentor voice of Queen of Millions. Analyze this community meeting transcript and extract key information.
+Return ONLY valid JSON with these keys:
+- "topic" (string): Main theme or title of the meeting
+- "keyPoints" (array of 3-5 strings): Most important takeaways, strategies, or announcements
+- "mentionedCoins" (array): Any cryptocurrencies discussed with reasons
+- "actionItems" (array): Specific actions community members should take
+Do not wrap in markdown.`
         },
         { role: 'user', content: text.slice(0, 8000) }, // limit tokens
       ],
     });
     const json = JSON.parse(completion.choices[0].message.content || '{}');
-    if (typeof json.topic === 'string' && Array.isArray(json.keyPoints)) {
-      topic = json.topic;
-      keyPoints = json.keyPoints;
-    }
+    if (typeof json.topic === 'string') topic = json.topic;
+    if (Array.isArray(json.keyPoints)) keyPoints = json.keyPoints;
+    if (Array.isArray(json.mentionedCoins)) mentionedCoins = json.mentionedCoins;
+    if (Array.isArray(json.actionItems)) actionItems = json.actionItems;
   } catch (err) {
     console.warn('[Transcript] summarization failed', err);
   }
 
   const metas = readTranscriptMeta();
-  metas.push({ date: transcriptDate, topic, keyPoints, file: fileName });
+  metas.push({ 
+    date: transcriptDate, 
+    topic, 
+    keyPoints, 
+    mentionedCoins,
+    actionItems,
+    file: fileName 
+  });
   metas.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   writeTranscriptMeta(metas);
 
@@ -300,11 +335,13 @@ Return ONLY valid JSON with keys "topic" (string) and "keyPoints" (array of 3-5 
         {
           role: 'system',
           content:
-            `You are Millie, crafting dashboard content for the Queen of Millions community.
-Based on the transcript, create JSON with these keys:
- dailyQuotes — array of 3 inspiring crypto quotes in Millie's voice,
- communityNews — up to 3 objects {title, content, type: "update"|"partnership"|"milestone"},
- coinOfWeek — {name, symbol, reason, targetPrice, analysis} - focus on top performing coins from the PulseChain ecosystem or other high-potential projects mentioned.
+            `You are Millie, crafting comprehensive dashboard content for the Queen of Millions community.
+Analyze this transcript thoroughly and create JSON with these keys:
+ dailyQuotes — array of 3 inspiring quotes from the transcript or in Millie's voice based on topics discussed,
+ communityNews — up to 3 objects {title, content, type: "update"|"partnership"|"milestone"} - MUST reflect actual announcements, updates, or initiatives mentioned in the transcript,
+ coinOfWeek — {name, symbol, reason, targetPrice, analysis} - choose the most discussed or recommended coin from the transcript, preferably from PulseChain ecosystem.
+ 
+IMPORTANT: Extract real information from the transcript. If specific coins, strategies, or announcements are mentioned, use those. Make the dashboard reflect what was actually discussed in the meeting.
 Keep copy warm, empowering, jargon-light. Return ONLY JSON, no markdown.`
         },
         { role: 'user', content: text.slice(0, 8000) },
