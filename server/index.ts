@@ -206,7 +206,23 @@ Guidelines:
         ...messages,
       ],
     });
-    res.json({ content: completion.choices[0].message.content });
+    
+    const assistantResponse = completion.choices[0].message.content || '';
+    
+    // Save Q&A pair to knowledge base
+    try {
+      const qaText = `Q: ${userQuestion}\nA: ${assistantResponse}`;
+      const emb = await openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: qaText,
+      });
+      addVector({ text: qaText, embedding: emb.data[0].embedding });
+      saveVectors();
+    } catch (err) {
+      console.warn('[Q&A save] failed', err);
+    }
+    
+    res.json({ content: assistantResponse });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ message: 'OpenAI error', detail: err.message });

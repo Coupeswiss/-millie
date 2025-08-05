@@ -59,7 +59,10 @@ export async function webSearch(query: string): Promise<string> {
           const prices = priceResponse.data;
           results = 'Current PulseChain ecosystem prices:\n';
           if (prices.pulsechain) {
-            results += `PLS: $${prices.pulsechain.usd} (${prices.pulsechain.usd_24h_change?.toFixed(2)}%)\n`;
+            const plsPrice = prices.pulsechain.usd < 0.01 
+              ? prices.pulsechain.usd.toFixed(6) 
+              : prices.pulsechain.usd.toFixed(4);
+            results += `PLS: $${plsPrice} (${prices.pulsechain.usd_24h_change?.toFixed(2)}%)\n`;
           }
           if (prices.hex) {
             results += `HEX: $${prices.hex.usd} (${prices.hex.usd_24h_change?.toFixed(2)}%)\n`;

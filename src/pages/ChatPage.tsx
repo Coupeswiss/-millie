@@ -368,7 +368,13 @@ What's on your mind today? 💜`,
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>{coin.symbol}</Typography>
                       <Box sx={{ textAlign: 'right' }}>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          {coin.price ? `$${coin.price.toLocaleString()}` : <Skeleton width={60} />}
+                          {coin.price ? (
+                            coin.price < 0.01 
+                              ? `$${coin.price.toFixed(6)}` 
+                              : `$${coin.price.toLocaleString()}`
+                          ) : (
+                            <Skeleton width={60} />
+                          )}
                         </Typography>
                         <Chip
                           size="small"
