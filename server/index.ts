@@ -179,7 +179,7 @@ Guidelines:
 • Celebrate small wins and reassure around market volatility.
 • Keep answers concise (≈3 short paragraphs) unless the user requests deep detail.
 • If you don’t know something, say so and suggest where to find the answer.`,
-        }
+        },
         {
           role: 'system',
           content: `Relevant facts:\n${context}`,
