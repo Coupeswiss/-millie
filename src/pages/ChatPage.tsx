@@ -682,63 +682,7 @@ What's on your mind today? 💜`,
               </Button>
             </Paper>
 
-            {/* Upload Transcript (admin-only) */}
-            {isAdmin && (
-            <Paper sx={{ 
-              p: 3,
-              background: 'rgba(30, 58, 95, 0.6)',
-              border: '2px solid rgba(78, 205, 196, 0.3)',
-            }}>
-              <Typography variant="h6" gutterBottom sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1,
-                color: 'primary.main',
-                fontWeight: 700,
-              }}>
-                <NewspaperIcon /> Upload Transcript
-              </Typography>
-              <TextField
-                fullWidth
-                variant="outlined"
-                multiline
-                rows={4}
-                placeholder="Paste your chat transcript here..."
-                value={uploadText}
-                onChange={(e) => setUploadText(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(78, 205, 196, 0.05)',
-                    borderRadius: 3,
-                    '&:hover': {
-                      backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                    },
-                    '& fieldset': {
-                      borderColor: 'rgba(78, 205, 196, 0.3)',
-                      borderWidth: 2,
-                    },
-                  },
-                }}
-              />
-              <Button
-                variant="contained"
-                fullWidth
-                sx={{
-                  mt: 2,
-                  background: 'linear-gradient(45deg, #4ECDC4, #7FE7E0)',
-                  color: 'white',
-                  fontWeight: 600,
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #3AB5B0, #66D9D0)',
-                  },
-                }}
-                onClick={handleUploadTranscript}
-                disabled={!uploadText.trim()}
-              >
-                Upload Transcript
-              </Button>
-            </Paper>
-            )}
+
 
             {/* Community News */}
             <Paper sx={{ 

@@ -22,10 +22,10 @@
     }
   ],
   "coinOfWeek": {
-    "name": "CABCAT",
-    "symbol": "CAT",
-    "reason": "CABCAT is emerging with unique utility and strong community engagement, making it a prime candidate for early investment.",
-    "targetPrice": "$2.50",
-    "analysis": "With ongoing market trends favoring utility-driven coins and a bullish environment in Q4, CABCAT shows potential for significant growth."
+    "name": "PulseChain",
+    "symbol": "PLS",
+    "reason": "Native coin of the PulseChain ecosystem showing strong on-chain activity and community growth",
+    "targetPrice": "$0.0015",
+    "analysis": "With increasing DeFi adoption and lower fees than Ethereum, PulseChain is positioned for growth in the current market cycle."
   }
 }

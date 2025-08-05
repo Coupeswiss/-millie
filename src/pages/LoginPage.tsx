@@ -24,12 +24,16 @@ export default function LoginPage({ onLogin }: Props) {
   const [error, setError] = useState('');
 
   const fakeLogin = () => {
-    // Extract name from email (before @ symbol)
+    // Check for hardcoded admin credentials
+    if (email === 'admin@qom.com' && password === 'millieadmin') {
+      onLogin('admin-token-hardcoded', 'Admin', true);
+      return;
+    }
+    
+    // Regular user login
     const name = email.split('@')[0] || 'Friend';
-    // Capitalize first letter
     const capitalizedName = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-    const isAdmin = email.toLowerCase().startsWith('admin') || email.toLowerCase().endsWith('@admin.com');
-    onLogin('demo-token', capitalizedName, isAdmin);
+    onLogin('demo-token', capitalizedName, false);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
+import AdminPage from './pages/AdminPage';
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -41,5 +42,11 @@ export default function App() {
     return <LoginPage onLogin={handleLogin} />;
   }
 
-  return <ChatPage token={token} userName={userName} isAdmin={isAdmin} onLogout={handleLogout} />;
+  // Show admin page for admin users
+  if (isAdmin) {
+    return <AdminPage onLogout={handleLogout} />;
+  }
+
+  // Show regular chat page for normal users
+  return <ChatPage token={token} userName={userName} isAdmin={false} onLogout={handleLogout} />;
 } 
