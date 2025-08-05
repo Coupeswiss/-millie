@@ -1,0 +1,31 @@
+{
+  "dailyQuotes": [
+    "Invest in yourself, your knowledge, and your network; the returns are limitless.",
+    "In the world of crypto, the only constant is adaptation; stay ahead, or get left behind.",
+    "Every setback is a setup for a comeback in the volatile market of cryptocurrencies."
+  ],
+  "communityNews": [
+    {
+      "title": "Upcoming Webinar on Crypto Investing",
+      "content": "Join us on July 16 for a free educational session titled 'A Confident Woman's Guide to Crypto Investing'. Let's build the QOM energy together!",
+      "type": "update"
+    },
+    {
+      "title": "Macroeconomics Bonus Call",
+      "content": "Participate in our special call with Joseph focusing on macroeconomic trends this Wednesday at 5:30 PM EST.",
+      "type": "update"
+    },
+    {
+      "title": "Exciting QOM Evolution Teased",
+      "content": "Stay tuned for major updates on QOM evolution as we continue to expand our platform capabilities.",
+      "type": "update"
+    }
+  ],
+  "coinOfWeek": {
+    "name": "CABCAT",
+    "symbol": "CAT",
+    "reason": "CABCAT is emerging with unique utility and strong community engagement, making it a prime candidate for early investment.",
+    "targetPrice": "$2.50",
+    "analysis": "With ongoing market trends favoring utility-driven coins and a bullish environment in Q4, CABCAT shows potential for significant growth."
+  }
+}
