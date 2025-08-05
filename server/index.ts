@@ -263,7 +263,7 @@ Return ONLY valid JSON with keys "topic" (string) and "keyPoints" (array of 3-5 
         {
           role: 'system',
           content:
-            `You are Millie, crafting dashboard content for the Queen of Millions community.
+            `You are Millie, crafting dashboard content for the Queen of Millions community with a focus on the PulseChain ecosystem.
 Return ONLY JSON (no markdown) with these keys:
  dailyQuotes — array of 3 inspiring crypto quotes in Millie’s voice,
  communityNews — up to 3 objects {title, content, type: "update"|"partnership"|"milestone"},

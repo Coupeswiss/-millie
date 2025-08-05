@@ -107,12 +107,12 @@ const defaultCommunityNews = [
 ];
 
 const defaultCoinOfWeek = {
-  name: 'Arbitrum',
-  symbol: 'ARB',
-  reason: 'Layer 2 scaling solution seeing massive adoption',
-  targetPrice: '$2.50',
-  currentPrice: '$1.85',
-  analysis: 'Strong fundamentals with growing TVL and developer activity.',
+  name: 'PulseChain',
+  symbol: 'PLS',
+  reason: 'Native coin of the PulseChain ecosystem, gaining traction among DeFi users',
+  targetPrice: '$0.0015',
+  currentPrice: '$0.0009',
+  analysis: 'Strong community support and increasing on-chain activity after mainnet launch.',
 };
 
 export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) {
@@ -125,6 +125,7 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
     { symbol: 'BTC', price: 0, change: 0 },
     { symbol: 'ETH', price: 0, change: 0 },
     { symbol: 'SOL', price: 0, change: 0 },
+    { symbol: 'PLS', price: 0, change: 0 },
   ]);
   const [weeklyMeetingData, setWeeklyMeetingData] = useState<WeeklyMeeting | null>(null);
   const [newsItems, setNewsItems] = useState<CommunityNewsItem[]>(defaultCommunityNews);
@@ -137,25 +138,30 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
     const fetchPrices = async () => {
       try {
         const response = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true'
+          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,pulsechain&vs_currencies=usd&include_24hr_change=true'
         );
         const data = await response.json();
         
         setMarketData([
           {
             symbol: 'BTC',
-            price: data.bitcoin.usd,
-            change: data.bitcoin.usd_24h_change,
+            price: data.bitcoin?.usd ?? 0,
+            change: data.bitcoin?.usd_24h_change ?? 0,
           },
           {
             symbol: 'ETH',
-            price: data.ethereum.usd,
-            change: data.ethereum.usd_24h_change,
+            price: data.ethereum?.usd ?? 0,
+            change: data.ethereum?.usd_24h_change ?? 0,
           },
           {
             symbol: 'SOL',
-            price: data.solana.usd,
-            change: data.solana.usd_24h_change,
+            price: data.solana?.usd ?? 0,
+            change: data.solana?.usd_24h_change ?? 0,
+          },
+          {
+            symbol: 'PLS',
+            price: data.pulsechain?.usd ?? 0,
+            change: data.pulsechain?.usd_24h_change ?? 0,
           },
         ]);
       } catch (error) {
@@ -194,6 +200,8 @@ export default function ChatPage({ token, userName, isAdmin, onLogout }: Props) 
 
   useEffect(() => {
     fetchSummary();
+    const intervalId = setInterval(fetchSummary, 5 * 60 * 1000); // refresh every 5 minutes
+    return () => clearInterval(intervalId);
   }, []);
 
   const handleUploadTranscript = async () => {
