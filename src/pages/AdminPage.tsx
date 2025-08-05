@@ -236,24 +236,36 @@ export default function AdminPage({ onLogout }: Props) {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f0f2f5' }}>
       {/* Header */}
-      <Paper sx={{ borderRadius: 0, mb: 3 }}>
+      <Paper sx={{ 
+        borderRadius: 0, 
+        mb: 3,
+        background: '#1a1a1a',
+        color: '#fff',
+      }}>
         <Container maxWidth="lg">
           <Box sx={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            py: 2,
+            py: 2.5,
           }}>
-            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, letterSpacing: '-0.5px' }}>
               Millie Admin Portal
             </Typography>
             <Button
               variant="outlined"
               startIcon={<LogoutIcon />}
               onClick={onLogout}
-              sx={{ borderColor: '#333', color: '#333' }}
+              sx={{ 
+                borderColor: '#fff', 
+                color: '#fff',
+                '&:hover': {
+                  borderColor: '#fff',
+                  background: 'rgba(255,255,255,0.1)',
+                }
+              }}
             >
               Logout
             </Button>
@@ -262,18 +274,31 @@ export default function AdminPage({ onLogout }: Props) {
       </Paper>
 
       <Container maxWidth="lg">
-        <Paper sx={{ bgcolor: '#fff', borderRadius: 2 }}>
+        <Paper sx={{ 
+          bgcolor: '#fff', 
+          borderRadius: 2,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+        }}>
           <Tabs
             value={tabValue}
             onChange={(_, v) => setTabValue(v)}
             variant="scrollable"
             scrollButtons="auto"
             sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
+              borderBottom: 2,
+              borderColor: '#e0e0e0',
+              background: '#fafafa',
               '& .MuiTab-root': {
                 textTransform: 'none',
-                fontWeight: 500,
+                fontWeight: 600,
+                color: '#666',
+                '&.Mui-selected': {
+                  color: '#1a1a1a',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#1a1a1a',
+                height: 3,
               },
             }}
           >
@@ -286,7 +311,7 @@ export default function AdminPage({ onLogout }: Props) {
 
           {/* Collective Consciousness Tab */}
           <TabPanel value={tabValue} index={0}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
               Collective Consciousness Upload
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -311,6 +336,14 @@ export default function AdminPage({ onLogout }: Props) {
               onClick={handleCollectiveUpload}
               disabled={!collectiveText.trim() || loading}
               startIcon={<PsychologyIcon />}
+              sx={{
+                background: '#1a1a1a',
+                '&:hover': {
+                  background: '#333',
+                },
+                fontWeight: 600,
+                py: 1.5,
+              }}
             >
               Add to Collective Consciousness
             </Button>
@@ -318,7 +351,7 @@ export default function AdminPage({ onLogout }: Props) {
 
           {/* Transcripts Tab */}
           <TabPanel value={tabValue} index={1}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
               Upload Meeting Transcript
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -342,6 +375,14 @@ export default function AdminPage({ onLogout }: Props) {
               size="large"
               onClick={handleTranscriptUpload}
               disabled={!transcriptText.trim() || loading}
+              sx={{
+                background: '#1a1a1a',
+                '&:hover': {
+                  background: '#333',
+                },
+                fontWeight: 600,
+                py: 1.5,
+              }}
             >
               Process Transcript
             </Button>
@@ -349,7 +390,7 @@ export default function AdminPage({ onLogout }: Props) {
 
           {/* System Prompt Tab */}
           <TabPanel value={tabValue} index={2}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
               System Prompt Configuration
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -374,6 +415,14 @@ export default function AdminPage({ onLogout }: Props) {
               onClick={handleSystemPromptUpdate}
               disabled={!systemPrompt.trim() || loading}
               startIcon={<SettingsIcon />}
+              sx={{
+                background: '#1a1a1a',
+                '&:hover': {
+                  background: '#333',
+                },
+                fontWeight: 600,
+                py: 1.5,
+              }}
             >
               Update System Prompt
             </Button>
@@ -381,14 +430,18 @@ export default function AdminPage({ onLogout }: Props) {
 
           {/* Daily Wisdom Tab */}
           <TabPanel value={tabValue} index={3}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
               Daily Wisdom Quotes
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Manage the inspirational quotes that appear in the user dashboard.
             </Typography>
             
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ 
+              mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
               <CardContent>
                 <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                   <TextField
@@ -403,6 +456,14 @@ export default function AdminPage({ onLogout }: Props) {
                     onClick={handleAddQuote}
                     disabled={!newQuote.trim() || loading}
                     startIcon={<AddIcon />}
+                    sx={{
+                      background: '#1a1a1a',
+                      '&:hover': {
+                        background: '#333',
+                      },
+                      fontWeight: 600,
+                      px: 3,
+                    }}
                   >
                     Add
                   </Button>
@@ -410,7 +471,10 @@ export default function AdminPage({ onLogout }: Props) {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card sx={{
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>
                   Current Quotes ({dailyQuotes.length})
@@ -440,11 +504,15 @@ export default function AdminPage({ onLogout }: Props) {
 
           {/* Whitelist Tab */}
           <TabPanel value={tabValue} index={4}>
-            <Typography variant="h6" gutterBottom>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
               Member Whitelist Management
             </Typography>
             
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ 
+              mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>
                   Add Individual Email
@@ -462,6 +530,14 @@ export default function AdminPage({ onLogout }: Props) {
                     variant="contained"
                     onClick={handleAddEmail}
                     disabled={!newEmail.trim() || loading}
+                    sx={{
+                      background: '#1a1a1a',
+                      '&:hover': {
+                        background: '#333',
+                      },
+                      fontWeight: 600,
+                      px: 3,
+                    }}
                   >
                     Add
                   </Button>
@@ -469,7 +545,11 @@ export default function AdminPage({ onLogout }: Props) {
               </CardContent>
             </Card>
 
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ 
+              mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>
                   Bulk Upload
@@ -492,23 +572,60 @@ export default function AdminPage({ onLogout }: Props) {
                   fullWidth
                   onClick={handleCsvUpload}
                   disabled={!csvEmails.trim() || loading}
+                  sx={{
+                    background: '#1a1a1a',
+                    '&:hover': {
+                      background: '#333',
+                    },
+                    fontWeight: 600,
+                    py: 1.5,
+                  }}
                 >
                   Upload Emails
                 </Button>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card sx={{
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
               <CardContent>
                 <Typography variant="subtitle2" gutterBottom>
                   Current Whitelist ({whitelist.length} members)
                 </Typography>
-                <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {whitelist.map((email, idx) => (
-                      <Chip key={idx} label={email} size="small" />
-                    ))}
-                  </Stack>
+                <Box sx={{ 
+                  mt: 2, 
+                  maxHeight: 300, 
+                  overflow: 'auto',
+                  p: 2,
+                  bgcolor: '#f5f5f5',
+                  borderRadius: 1,
+                  border: '1px solid #e0e0e0',
+                }}>
+                  {whitelist.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
+                      No emails in whitelist yet
+                    </Typography>
+                  ) : (
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {whitelist.map((email, idx) => (
+                        <Chip 
+                          key={idx} 
+                          label={email} 
+                          size="small"
+                          sx={{
+                            bgcolor: '#1a1a1a',
+                            color: '#fff',
+                            fontWeight: 500,
+                            '& .MuiChip-label': {
+                              px: 1.5,
+                            },
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  )}
                 </Box>
               </CardContent>
             </Card>
@@ -518,8 +635,20 @@ export default function AdminPage({ onLogout }: Props) {
         </Paper>
       </Container>
 
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert onClose={() => setSnackbar({ ...snackbar, open: false })} severity={snackbar.severity}>
+      <Snackbar 
+        open={snackbar.open} 
+        autoHideDuration={6000} 
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ 
+            fontWeight: 600,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
