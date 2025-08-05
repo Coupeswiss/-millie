@@ -286,4 +286,12 @@ app.get('/api/summary', (_req, res) => {
   res.json({ weeklyMeeting: weekly, ...dash });
 });
 
+// -------- Serve React static build ---------
+const staticPath = path.join(__dirname, '..', 'dist');
+app.use(express.static(staticPath));
+// For any GET request that doesn\'t match an API route, send back index.html
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(staticPath, 'index.html'));
+});
+
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`)); 
