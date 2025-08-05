@@ -16,6 +16,7 @@ dotenv.config();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 const DATA_FILE = path.join(__dirname, 'users.json');
+const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
 
 // ---------- Transcript / Weekly Meeting Storage ----------
 const TRANSCRIPTS_META_FILE = path.join(__dirname, 'knowledge', 'transcripts.json');
@@ -104,6 +105,38 @@ const writeUsers = (users: UserRecord[]) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
 };
 
+// Whitelist management
+interface WhitelistData {
+  allowedEmails: string[];
+}
+
+const readWhitelist = (): WhitelistData => {
+  try {
+    const raw = fs.readFileSync(WHITELIST_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return { allowedEmails: ['admin@qom.com'] };
+  }
+};
+
+const writeWhitelist = (data: WhitelistData) => {
+  fs.mkdirSync(path.dirname(WHITELIST_FILE), { recursive: true });
+  fs.writeFileSync(WHITELIST_FILE, JSON.stringify(data, null, 2));
+};
+
+const isEmailWhitelisted = (email: string): boolean => {
+  const whitelist = readWhitelist();
+  return whitelist.allowedEmails.includes(email.toLowerCase());
+};
+
+const addToWhitelist = (email: string) => {
+  const whitelist = readWhitelist();
+  if (!whitelist.allowedEmails.includes(email.toLowerCase())) {
+    whitelist.allowedEmails.push(email.toLowerCase());
+    writeWhitelist(whitelist);
+  }
+};
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Load vectors into memory at startup
@@ -119,6 +152,12 @@ app.post('/api/register', async (req, res) => {
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password required' });
   }
+  
+  // Check whitelist
+  if (!isEmailWhitelisted(email)) {
+    return res.status(403).json({ message: 'Registration is by invitation only. Please contact an administrator.' });
+  }
+  
   const users = readUsers();
   if (users.find((u) => u.email === email)) {
     return res.status(400).json({ message: 'Email already registered' });
@@ -371,6 +410,37 @@ app.get('/api/summary', (_req, res) => {
   const weekly = readTranscriptMeta()[0] || null;
   const dash = readDashboard() || {};
   res.json({ weeklyMeeting: weekly, ...dash });
+});
+
+// ---------- Admin Whitelist Management ----------
+app.get('/api/admin/whitelist', (_req, res) => {
+  const whitelist = readWhitelist();
+  res.json(whitelist);
+});
+
+app.post('/api/admin/whitelist/add', (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ message: 'Email required' });
+  }
+  addToWhitelist(email);
+  res.json({ message: 'Email added to whitelist' });
+});
+
+app.post('/api/admin/whitelist/upload', (req, res) => {
+  const { emails } = req.body;
+  if (!Array.isArray(emails)) {
+    return res.status(400).json({ message: 'Emails array required' });
+  }
+  
+  const whitelist = readWhitelist();
+  emails.forEach(email => {
+    if (email && typeof email === 'string' && !whitelist.allowedEmails.includes(email.toLowerCase())) {
+      whitelist.allowedEmails.push(email.toLowerCase());
+    }
+  });
+  writeWhitelist(whitelist);
+  res.json({ message: `Added ${emails.length} emails to whitelist` });
 });
 
 // -------- Serve React static build ---------

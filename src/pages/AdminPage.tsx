@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -20,6 +20,9 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import LogoutIcon from '@mui/icons-material/Logout';
 import DescriptionIcon from '@mui/icons-material/Description';
+import GroupsIcon from '@mui/icons-material/Groups';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import api from '../api';
 
 interface TabPanelProps {
@@ -53,6 +56,9 @@ export default function AdminPage({ onLogout }: Props) {
   const [contextText, setContextText] = useState('');
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [newEmail, setNewEmail] = useState('');
+  const [csvEmails, setCsvEmails] = useState('');
+  const [whitelist, setWhitelist] = useState<string[]>([]);
 
   const handleTranscriptUpload = async () => {
     if (!transcriptText.trim()) return;
@@ -84,6 +90,59 @@ export default function AdminPage({ onLogout }: Props) {
       setLoading(false);
     }
   };
+
+  const fetchWhitelist = async () => {
+    try {
+      const res = await api.get('/api/admin/whitelist');
+      setWhitelist(res.data.allowedEmails || []);
+    } catch (err) {
+      console.error('Failed to fetch whitelist', err);
+    }
+  };
+
+  const handleAddEmail = async () => {
+    if (!newEmail.trim()) return;
+    
+    setLoading(true);
+    try {
+      await api.post('/api/admin/whitelist/add', { email: newEmail });
+      setSnackbar({ open: true, message: 'Email added to whitelist!', severity: 'success' });
+      setNewEmail('');
+      fetchWhitelist();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to add email', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvEmails.trim()) return;
+    
+    setLoading(true);
+    try {
+      // Parse CSV (handles comma, newline, or semicolon separated)
+      const emails = csvEmails
+        .split(/[,\n;]/)
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+      
+      await api.post('/api/admin/whitelist/upload', { emails });
+      setSnackbar({ open: true, message: `Added ${emails.length} emails to whitelist!`, severity: 'success' });
+      setCsvEmails('');
+      fetchWhitelist();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'Failed to upload emails', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tabValue === 2) {
+      fetchWhitelist();
+    }
+  }, [tabValue]);
 
   return (
     <Box sx={{ 
@@ -148,6 +207,7 @@ export default function AdminPage({ onLogout }: Props) {
           >
             <Tab label="Upload Transcript" icon={<UploadFileIcon />} iconPosition="start" />
             <Tab label="Add Context" icon={<DescriptionIcon />} iconPosition="start" />
+            <Tab label="Member Whitelist" icon={<GroupsIcon />} iconPosition="start" />
             <Tab label="System Status" icon={<AutoAwesomeIcon />} iconPosition="start" />
           </Tabs>
 
@@ -270,6 +330,162 @@ export default function AdminPage({ onLogout }: Props) {
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
+            <Box>
+              <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
+                Member Whitelist Management
+              </Typography>
+              
+              {/* Add Individual Email */}
+              <Paper sx={{ 
+                p: 3, 
+                mb: 3,
+                background: 'rgba(138, 43, 226, 0.05)',
+                border: '1px solid rgba(138, 43, 226, 0.2)',
+              }}>
+                <Typography variant="subtitle1" gutterBottom sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  mb: 2,
+                }}>
+                  <PersonAddIcon sx={{ color: '#8A2BE2' }} />
+                  Add Individual Email
+                </Typography>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <TextField
+                    fullWidth
+                    type="email"
+                    variant="outlined"
+                    placeholder="member@email.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        backgroundColor: 'rgba(138, 43, 226, 0.05)',
+                        '& fieldset': {
+                          borderColor: 'rgba(138, 43, 226, 0.3)',
+                        },
+                      },
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleAddEmail}
+                    disabled={!newEmail.trim() || loading}
+                    sx={{
+                      px: 3,
+                      background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
+                      '&:hover': {
+                        background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
+                      },
+                    }}
+                  >
+                    Add
+                  </Button>
+                </Box>
+              </Paper>
+              
+              {/* Bulk Upload */}
+              <Paper sx={{ 
+                p: 3, 
+                mb: 3,
+                background: 'rgba(138, 43, 226, 0.05)',
+                border: '1px solid rgba(138, 43, 226, 0.2)',
+              }}>
+                <Typography variant="subtitle1" gutterBottom sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1,
+                  mb: 2,
+                }}>
+                  <FileUploadIcon sx={{ color: '#8A2BE2' }} />
+                  Bulk Email Upload
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Paste emails separated by commas, semicolons, or new lines
+                </Typography>
+                
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={6}
+                  variant="outlined"
+                  placeholder="email1@example.com, email2@example.com&#10;email3@example.com"
+                  value={csvEmails}
+                  onChange={(e) => setCsvEmails(e.target.value)}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(138, 43, 226, 0.05)',
+                      '& fieldset': {
+                        borderColor: 'rgba(138, 43, 226, 0.3)',
+                      },
+                    },
+                  }}
+                />
+                
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={handleCsvUpload}
+                  disabled={!csvEmails.trim() || loading}
+                  sx={{
+                    mt: 2,
+                    py: 1.5,
+                    background: 'linear-gradient(90deg, #8A2BE2 0%, #9370DB 100%)',
+                    '&:hover': {
+                      background: 'linear-gradient(90deg, #7B1FA2 0%, #8E24AA 100%)',
+                    },
+                  }}
+                >
+                  Upload Emails
+                </Button>
+              </Paper>
+              
+              {/* Current Whitelist */}
+              <Paper sx={{ 
+                p: 3,
+                background: 'rgba(138, 43, 226, 0.05)',
+                border: '1px solid rgba(138, 43, 226, 0.2)',
+              }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Current Whitelist ({whitelist.length} members)
+                </Typography>
+                <Box sx={{ 
+                  mt: 2, 
+                  maxHeight: 300, 
+                  overflow: 'auto',
+                  background: 'rgba(0, 0, 0, 0.2)',
+                  borderRadius: 1,
+                  p: 2,
+                }}>
+                  {whitelist.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      No emails in whitelist yet
+                    </Typography>
+                  ) : (
+                    <Stack spacing={1}>
+                      {whitelist.map((email, idx) => (
+                        <Chip
+                          key={idx}
+                          label={email}
+                          size="small"
+                          sx={{
+                            background: 'rgba(138, 43, 226, 0.2)',
+                            borderColor: 'rgba(138, 43, 226, 0.4)',
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              </Paper>
+              
+              {loading && <LinearProgress sx={{ mt: 2 }} />}
+            </Box>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={3}>
             <Box>
               <Typography variant="h6" gutterBottom sx={{ color: '#8A2BE2', mb: 3 }}>
                 System Status
