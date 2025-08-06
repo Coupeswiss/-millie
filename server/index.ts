@@ -17,17 +17,29 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 const DATA_FILE = path.join(__dirname, 'users.json');
 const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
+const UPLOAD_HISTORY_FILE = path.join(__dirname, 'upload-history.json');
 
 // ---------- Transcript / Weekly Meeting Storage ----------
 const TRANSCRIPTS_META_FILE = path.join(__dirname, 'knowledge', 'transcripts.json');
 
 interface TranscriptMeta {
   date: string; // ISO string
+  weekNumber?: number; // Week number in the year
   topic: string;
   keyPoints: string[];
   mentionedCoins?: string[];
   actionItems?: string[];
   file: string; // relative path to transcript file
+  uploadedAt: string; // When it was uploaded
+}
+
+interface UploadHistoryEntry {
+  id: string;
+  type: 'transcript' | 'collective' | 'document';
+  uploadedAt: string;
+  uploadedBy?: string;
+  title: string;
+  metadata?: any;
 }
 
 const readTranscriptMeta = (): TranscriptMeta[] => {
@@ -42,6 +54,44 @@ const readTranscriptMeta = (): TranscriptMeta[] => {
 const writeTranscriptMeta = (data: TranscriptMeta[]) => {
   fs.mkdirSync(path.dirname(TRANSCRIPTS_META_FILE), { recursive: true });
   fs.writeFileSync(TRANSCRIPTS_META_FILE, JSON.stringify(data, null, 2));
+};
+
+// ---------- Upload History Management ----------
+const readUploadHistory = (): UploadHistoryEntry[] => {
+  try {
+    const raw = fs.readFileSync(UPLOAD_HISTORY_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+};
+
+const writeUploadHistory = (data: UploadHistoryEntry[]) => {
+  fs.writeFileSync(UPLOAD_HISTORY_FILE, JSON.stringify(data, null, 2));
+};
+
+const addToUploadHistory = (entry: Omit<UploadHistoryEntry, 'id' | 'uploadedAt'>) => {
+  const history = readUploadHistory();
+  const newEntry: UploadHistoryEntry = {
+    ...entry,
+    id: Date.now().toString(),
+    uploadedAt: new Date().toISOString(),
+  };
+  history.unshift(newEntry); // Add to beginning
+  // Keep only last 100 entries
+  if (history.length > 100) {
+    history.splice(100);
+  }
+  writeUploadHistory(history);
+  return newEntry;
+};
+
+const getWeekNumber = (date: Date): number => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
 };
 
 const CHUNK_SIZE = 800;
@@ -207,6 +257,18 @@ app.post('/api/chat', authMiddleware, async (req, res) => {
   } catch (err) {
     console.warn('[RAG] search failed', err);
   }
+  
+  // Add transcript metadata for date context
+  try {
+    const transcripts = readTranscriptMeta();
+    if (transcripts.length > 0) {
+      const latest = transcripts[0];
+      const currentWeek = getWeekNumber(new Date());
+      context = `[IMPORTANT CONTEXT: The most recent weekly meeting was on ${new Date(latest.date).toLocaleDateString()} (Week ${latest.weekNumber}). Current week is ${currentWeek}. There are ${transcripts.length} total weekly transcripts available.]\n\n` + context;
+    }
+  } catch (err) {
+    console.warn('[Transcript context] failed', err);
+  }
 
   // Add web search for real-time info
   const needsSearch = userQuestion.toLowerCase().includes('price') || 
@@ -347,16 +409,33 @@ Do not wrap in markdown.`
   }
 
   const metas = readTranscriptMeta();
+  const transcriptDateObj = new Date(transcriptDate);
+  const weekNum = getWeekNumber(transcriptDateObj);
+  
   metas.push({ 
-    date: transcriptDate, 
+    date: transcriptDate,
+    weekNumber: weekNum,
     topic, 
     keyPoints, 
     mentionedCoins,
     actionItems,
-    file: fileName 
+    file: fileName,
+    uploadedAt: new Date().toISOString()
   });
   metas.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   writeTranscriptMeta(metas);
+  
+  // Add to upload history
+  addToUploadHistory({
+    type: 'transcript',
+    title: `Week ${weekNum} - ${topic}`,
+    metadata: {
+      date: transcriptDate,
+      weekNumber: weekNum,
+      keyPointsCount: keyPoints.length,
+      mentionedCoins: mentionedCoins
+    }
+  });
 
   // ---------- Generate dashboard content ----------
   try {
@@ -402,6 +481,17 @@ app.get('/api/summary', (_req, res) => {
   const weekly = readTranscriptMeta()[0] || null;
   const dash = readDashboard() || {};
   res.json({ weeklyMeeting: weekly, ...dash });
+});
+
+// ---------- Upload History ----------
+app.get('/api/admin/upload-history', (_req, res) => {
+  const history = readUploadHistory();
+  res.json(history);
+});
+
+app.get('/api/admin/transcripts-all', (_req, res) => {
+  const metas = readTranscriptMeta();
+  res.json(metas);
 });
 
 // ---------- Admin Whitelist Management ----------
@@ -461,6 +551,17 @@ app.post('/api/admin/collective', async (req, res) => {
       }
     }
     saveVectors();
+    
+    // Add to upload history
+    addToUploadHistory({
+      type: 'collective',
+      title: `Collective Consciousness - ${type || 'general'}`,
+      metadata: {
+        type: type || 'general',
+        date: date || new Date().toISOString(),
+        textLength: text.length
+      }
+    });
     
     res.json({ message: 'Added to collective consciousness' });
   } catch (err) {

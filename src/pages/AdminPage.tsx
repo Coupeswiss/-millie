@@ -30,6 +30,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import HistoryIcon from '@mui/icons-material/History';
 import api from '../api';
 
 interface TabPanelProps {
@@ -77,6 +78,10 @@ export default function AdminPage({ onLogout }: Props) {
   const [whitelist, setWhitelist] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [csvEmails, setCsvEmails] = useState('');
+  
+  // History
+  const [uploadHistory, setUploadHistory] = useState<any[]>([]);
+  const [allTranscripts, setAllTranscripts] = useState<any[]>([]);
 
   useEffect(() => {
     if (tabValue === 2) {
@@ -85,6 +90,8 @@ export default function AdminPage({ onLogout }: Props) {
       fetchDailyQuotes();
     } else if (tabValue === 4) {
       fetchWhitelist();
+    } else if (tabValue === 5) {
+      fetchHistory();
     }
   }, [tabValue]);
 
@@ -214,6 +221,20 @@ export default function AdminPage({ onLogout }: Props) {
     }
   };
 
+  // History Handlers
+  const fetchHistory = async () => {
+    try {
+      const [historyRes, transcriptsRes] = await Promise.all([
+        api.get('/api/admin/upload-history'),
+        api.get('/api/admin/transcripts-all')
+      ]);
+      setUploadHistory(historyRes.data || []);
+      setAllTranscripts(transcriptsRes.data || []);
+    } catch (err) {
+      console.error('Failed to fetch history', err);
+    }
+  };
+
   const handleCsvUpload = async () => {
     if (!csvEmails.trim()) return;
     
@@ -307,6 +328,7 @@ export default function AdminPage({ onLogout }: Props) {
             <Tab label="System Prompt" icon={<SettingsIcon />} iconPosition="start" />
             <Tab label="Daily Wisdom" icon={<FormatQuoteIcon />} iconPosition="start" />
             <Tab label="Member Whitelist" icon={<GroupsIcon />} iconPosition="start" />
+            <Tab label="Upload History" icon={<HistoryIcon />} iconPosition="start" />
           </Tabs>
 
           {/* Collective Consciousness Tab */}
@@ -625,6 +647,130 @@ export default function AdminPage({ onLogout }: Props) {
                         />
                       ))}
                     </Stack>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          </TabPanel>
+
+          {/* Upload History Tab */}
+          <TabPanel value={tabValue} index={5}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: '#1a1a1a' }}>
+              Upload History & Transcript Archive
+            </Typography>
+            
+            {/* All Transcripts Section */}
+            <Card sx={{ 
+              mb: 3,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
+              <CardContent>
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                  Weekly Meeting Transcripts ({allTranscripts.length} total)
+                </Typography>
+                <Box sx={{ 
+                  maxHeight: 400, 
+                  overflow: 'auto',
+                  mt: 2,
+                }}>
+                  {allTranscripts.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
+                      No transcripts uploaded yet
+                    </Typography>
+                  ) : (
+                    <List>
+                      {allTranscripts.map((transcript, idx) => (
+                        <ListItem key={idx} divider>
+                          <ListItemText 
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  label={`Week ${transcript.weekNumber || '?'}`} 
+                                  size="small" 
+                                  color="primary"
+                                  sx={{ fontWeight: 600 }}
+                                />
+                                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                  {transcript.topic}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={
+                              <Box sx={{ mt: 1 }}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Meeting Date: {new Date(transcript.date).toLocaleDateString()} | 
+                                  Uploaded: {new Date(transcript.uploadedAt || transcript.date).toLocaleDateString()}
+                                </Typography>
+                                {transcript.keyPoints && transcript.keyPoints.length > 0 && (
+                                  <Box sx={{ mt: 1 }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                                      Key Points:
+                                    </Typography>
+                                    <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                                      {transcript.keyPoints.slice(0, 2).map((point, i) => (
+                                        <li key={i}>
+                                          <Typography variant="caption">{point}</Typography>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </Box>
+                                )}
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+
+            {/* Recent Uploads Section */}
+            <Card sx={{
+              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+              border: '1px solid #e0e0e0',
+            }}>
+              <CardContent>
+                <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
+                  Recent Uploads (All Types)
+                </Typography>
+                <Box sx={{ 
+                  maxHeight: 300, 
+                  overflow: 'auto',
+                  mt: 2,
+                }}>
+                  {uploadHistory.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" textAlign="center">
+                      No upload history available
+                    </Typography>
+                  ) : (
+                    <List>
+                      {uploadHistory.slice(0, 20).map((entry) => (
+                        <ListItem key={entry.id} divider>
+                          <ListItemText 
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  label={entry.type} 
+                                  size="small" 
+                                  color={entry.type === 'transcript' ? 'primary' : 'default'}
+                                />
+                                <Typography variant="body2">
+                                  {entry.title}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={
+                              <Typography variant="caption" color="text.secondary">
+                                {new Date(entry.uploadedAt).toLocaleString()}
+                              </Typography>
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
                   )}
                 </Box>
               </CardContent>
