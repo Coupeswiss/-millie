@@ -15,8 +15,12 @@ dotenv.config();
 
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
-const DATA_FILE = path.join(__dirname, 'users.json');
-const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
+// Use a configurable storage directory so data persists across deployments.
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
+fs.mkdirSync(STORAGE_DIR, { recursive: true });
+
+const DATA_FILE = path.join(STORAGE_DIR, 'users.json');
+const WHITELIST_FILE = path.join(STORAGE_DIR, 'whitelist.json');
 const UPLOAD_HISTORY_FILE = path.join(__dirname, 'upload-history.json');
 
 // ---------- Transcript / Weekly Meeting Storage ----------
