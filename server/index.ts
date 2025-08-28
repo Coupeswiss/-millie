@@ -19,6 +19,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
 const STORAGE_DIR = process.env.STORAGE_DIR || path.join(__dirname, 'storage');
 fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
+// Admin bootstrap credentials (can be overridden via env vars)
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'admin@qom.com').toLowerCase();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'millieadmin';
+
 const DATA_FILE = path.join(STORAGE_DIR, 'users.json');
 const WHITELIST_FILE = path.join(STORAGE_DIR, 'whitelist.json');
 const UPLOAD_HISTORY_FILE = path.join(__dirname, 'upload-history.json');
@@ -159,6 +163,23 @@ const writeUsers = (users: UserRecord[]) => {
   fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
 };
 
+// Ensure an admin user exists and is whitelisted
+const bootstrapAdminUser = () => {
+  try {
+    const users = readUsers();
+    const adminExists = users.some((u) => u.email.toLowerCase() === ADMIN_EMAIL);
+    if (!adminExists) {
+      const passwordHash = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+      users.push({ email: ADMIN_EMAIL, passwordHash });
+      writeUsers(users);
+      console.log(`[Bootstrap] Created admin user ${ADMIN_EMAIL}`);
+    }
+    addToWhitelist(ADMIN_EMAIL);
+  } catch (err) {
+    console.warn('[Bootstrap admin] failed', err);
+  }
+};
+
 // Whitelist management
 interface WhitelistData {
   allowedEmails: string[];
@@ -199,6 +220,9 @@ loadVectors();
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+// Bootstrap admin after basic middleware
+bootstrapAdminUser();
 
 // Registration
 app.post('/api/register', async (req, res) => {
